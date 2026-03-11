@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+# Vault local storage
+/vault/data/
+
+# optional logs if you add them later
+/vault/logs/
