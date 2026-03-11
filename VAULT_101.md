@@ -1,129 +1,326 @@
-## Running HashiCorp Vault Locally (Prod-like Mode)
-- This setup runs Vault locally using Docker without Dev Mode, so that it behaves closer to a production environment.
-- In this mode:
-  - Vault starts sealed
-  - You must initialize Vault
-  - You must manually unseal Vault using Shamir keys
+# Vault Encryption Demo (Spring Boot + HashiCorp Vault)
 
-### 1. Start Vault Locally
-1. `docker compose up -d`
+This project demonstrates how to use **HashiCorp Vault Transit Engine** with a **Spring Boot application** to perform:
 
-### 2. Initialize Vault
-- Since we are not using Dev Mode, Vault must be initialized.
+- Encryption
+- Decryption
+- Key Rotation
 
-`docker exec -it vault vault operator init`
-- You will get 5 unseal keys: 1 initial root token -> Save them (typically in some secret store).
-- Output:
-```html
-    Unseal Key 1: <key1>
-  Unseal Key 2: <key2>
-  Unseal Key 3: <key3>
-  Unseal Key 4: <key4>
-  Unseal Key 5: <key5>
+The setup runs **Vault locally using Docker in production-like mode (not dev mode)**.
 
-  Initial Root Token: <root-token>
+---
+
+# Architecture
+
 ```
-Important concepts:
-- Vault uses Shamir Secret Sharing:
-  - 5 key shares generated
-  - 3 required to unseal Vault
-  - Root token is used for administrative operations
-    ⚠️ Save these securely (do NOT commit them to Git).
+Spring Boot Application
+        │
+        │ AppRole Login
+        ▼
+Vault Auth API
+        │
+        │ client token issued
+        ▼
+Transit Secrets Engine
+        │
+        ├ encrypt
+        ├ decrypt
+        └ rotate keys
+```
 
-In production they are stored in:
-- secure password managers
+---
+
+# Roles
+
+| Role | Responsibility |
+|-----|-----|
+| Vault Operator / DevOps | Initialize Vault, unseal Vault, configure secrets engines and policies |
+| Application Developer | Configure application authentication |
+| Application | Use Vault encryption APIs |
+
+---
+
+# 1. Start Vault Locally
+
+Operator runs:
+
+```bash
+docker compose up -d
+```
+
+Vault starts **sealed and uninitialized**.
+
+---
+
+# 2. Initialize Vault
+
+Vault must be initialized once.
+
+```bash
+docker exec -it vault vault operator init
+```
+
+Example output:
+
+```
+Unseal Key 1: <key1>
+Unseal Key 2: <key2>
+Unseal Key 3: <key3>
+Unseal Key 4: <key4>
+Unseal Key 5: <key5>
+
+Initial Root Token: <root-token>
+```
+
+Important:
+
+Vault uses **Shamir Secret Sharing**
+
+- 5 keys generated
+- 3 keys required to unseal
+- Root token is administrative
+
+⚠️ Never commit these values to Git.
+
+Production storage examples:
+
+- password managers
 - HSM
 - secret vaults
-- distributed across multiple operators
--
-### 3. Unseal Vault
-- After initialization Vault is sealed and cannot serve requests.
-- You must provide 3 of the 5 unseal keys.
-- Run `docker exec -it vault vault operator unseal` <= Enter `Unseal Key 1`.
-- Repeat above for `Unseal Key 2` and `Unseal Key 3`
-- After the threshold (3 keys), Vault becomes unsealed.
-- ``
+- distributed among operators
 
-### 4. Login to Vault
-- Use the Initial Root Token. `docker exec -it vault vault login`
-- **Verify Vault Status**
-  - `docker exec -it vault vault status`
+---
 
-    ```html
-    Key             Value
-    ---             -----
-    Sealed          false
-    Initialized     true
-    Version         1.x.x
-    ```
-  -  `curl http://localhost:8200/v1/sys/health`
-- **Why Unsealing Exists**
-  - Vault keeps its master encryption key encrypted.
-  - When Vault starts:
-    - Vault storage is encrypted
-    - Master key is split into Shamir shares
-    - Operators must provide threshold shares to reconstruct the master key
-  - This ensures no single person can unlock Vault alone.
+# 3. Unseal Vault
 
-- **In Production**
-  - Manual unsealing is usually avoided using Auto-Unseal.
-  - Examples: `AWS KMS`, `GCP KMS`, `HSM`
-  - Vault automatically retrieves the key and unseals itself.
-- **Stop Vault**
-  - `docker compose down`
-  - Note: When Vault restarts, it will be sealed again, and you must unseal it again.
+Vault is sealed after initialization.
 
-### 5. Enable Transit
-- `docker exec -it vault vault secrets enable transit`
-- This creates the API path: `/v1/transit/*`
-- Now Vault supports: `encryption`, `decryption`, `signing`, `verification``,key rotation`
+Run:
 
-### 6. Enable AppRole auth
-- `docker exec -it vault vault auth enable approle`
-
-### 7. Create policy file
-
-- Create vault/policies/app-policy.hcl on your machine with:
+```bash
+docker exec -it vault vault operator unseal
 ```
+
+Enter **Unseal Key 1**
+
+Run again:
+
+```bash
+docker exec -it vault vault operator unseal
+```
+
+Enter **Unseal Key 2**
+
+Run again:
+
+```bash
+docker exec -it vault vault operator unseal
+```
+
+Enter **Unseal Key 3**
+
+Vault becomes **unsealed**.
+
+---
+
+# 4. Login to Vault
+
+```bash
+docker exec -it vault vault login
+```
+
+Enter the **Initial Root Token**.
+
+---
+
+# 5. Verify Vault Status
+
+```bash
+docker exec -it vault vault status
+```
+
+Expected output:
+
+```
+Sealed: false
+Initialized: true
+```
+
+You can also verify with:
+
+```bash
+curl http://localhost:8200/v1/sys/health
+```
+
+---
+
+# Why Vault Uses Unsealing
+
+Vault encrypts all stored data.
+
+At startup:
+
+- storage is encrypted
+- master key is split using Shamir shares
+- multiple operators must reconstruct it
+
+This prevents **one person unlocking Vault alone**.
+
+---
+
+# Production Alternative: Auto-Unseal
+
+Most production setups use **Auto-Unseal**.
+
+Examples:
+
+- AWS KMS
+- GCP KMS
+- Azure Key Vault
+- HSM
+- Transit Auto-Unseal
+
+Vault retrieves the key automatically.
+
+---
+
+# 6. Enable Transit Engine
+
+Transit provides **Encryption as a Service**.
+
+```bash
+docker exec -it vault vault secrets enable transit
+```
+
+This creates API paths:
+
+```
+/v1/transit/*
+```
+
+Transit supports:
+
+- encryption
+- decryption
+- signing
+- verification
+- key rotation
+
+---
+
+# 7. Create Encryption Key
+
+```bash
+docker exec -it vault vault write transit/keys/file-key type=aes256-gcm96
+```
+
+This key will be used by the application.
+
+---
+
+# 8. Enable AppRole Authentication
+
+```bash
+docker exec -it vault vault auth enable approle
+```
+
+AppRole is designed for **machine-to-machine authentication**.
+
+---
+
+# 9. Create Policy
+
+Create file:
+
+```
+vault/policies/app-policy.hcl
+```
+
+Policy contents:
+
+```hcl
 path "transit/encrypt/file-key" {
-capabilities = ["update"]
+  capabilities = ["update"]
 }
 
 path "transit/decrypt/file-key" {
-capabilities = ["update"]
+  capabilities = ["update"]
 }
 
 path "transit/keys/file-key" {
-capabilities = ["read"]
+  capabilities = ["read"]
 }
 
 path "transit/keys/file-key/rotate" {
-capabilities = ["update"]
+  capabilities = ["update"]
 }
 ```
-- Then load it: `docker exec -it vault vault policy write app-policy /vault/policies/app-policy.hcl`
 
-### 8. Create AppRole
+Load policy:
+
+```bash
+docker exec -it vault vault policy write app-policy /vault/policies/app-policy.hcl
 ```
+
+---
+
+# 10. Create AppRole
+
+```bash
 docker exec -it vault vault write auth/approle/role/vault-demo \
 token_policies="app-policy" \
 token_ttl="1h" \
 token_max_ttl="4h"
 ```
-### Read role_id
-- `docker exec -it vault vault read auth/approle/role/vault-demo/role-id`
-### Generate secret_id
-- `docker exec -it vault vault write -f auth/approle/role/vault-demo/secret-id`
-- Now you will have:`role_id` `secret_id`
 
-- 🚀🚀🚀 **These are what your Spring Boot app should use.**
+---
 
-### Your app config
+# 11. Retrieve Role ID
+
+```bash
+docker exec -it vault vault read auth/approle/role/vault-demo/role-id
 ```
+
+---
+
+# 12. Generate Secret ID
+
+```bash
+docker exec -it vault vault write -f auth/approle/role/vault-demo/secret-id
+```
+
+You now have:
+
+```
+role_id
+secret_id
+```
+
+These will be used by the application.
+
+---
+
+# 13. Provide Credentials to Application
+
+Windows:
+
+```bash
 set VAULT_ROLE_ID=...
 set VAULT_SECRET_ID=...
 ```
-- application.yml:
+
+Linux / Mac:
+
+```bash
+export VAULT_ROLE_ID=...
+export VAULT_SECRET_ID=...
+```
+
+---
+
+# 14. Spring Boot Configuration
+
+`application.yml`
 
 ```yaml
 app:
@@ -137,3 +334,39 @@ app:
       key-name: file-key
 ```
 
+---
+
+# Stopping Vault
+
+```bash
+docker compose down
+```
+
+When Vault restarts it will be **sealed again** and must be unsealed.
+
+---
+
+# Summary
+
+| Step | Performed By |
+|----|----|
+| Start Vault | Operator |
+| Initialize Vault | Operator |
+| Unseal Vault | Operator |
+| Enable Transit | Operator |
+| Create Key | Operator |
+| Create Policy | Operator |
+| Create AppRole | Operator |
+| Provide role_id/secret_id | Operator |
+| Configure Application | Developer |
+| Use Vault APIs | Application |
+
+---
+
+# What This Demo Shows
+
+- Production-style Vault setup
+- AppRole authentication
+- Vault Transit encryption
+- Key rotation
+- Secure secret management
