@@ -38,7 +38,7 @@
 		<dependency>
 			<groupId>org.springframework.vault</groupId>
 			<artifactId>spring-vault-core</artifactId>
-			<version>4.0.1</version>
+			<version>3.2.0</version>
 		</dependency>
 
 		<!-- config metadata for IDE completion -->

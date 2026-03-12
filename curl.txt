@@ -1,0 +1,59 @@
+1. curl http://localhost:8200/v1/sys/health
+{
+  "initialized": true,
+  "sealed": false
+}
+2. curl \
+   --request POST \
+   --data '{"role_id":"b2d8XXX,"secret_id":"3fb9XXX"}' \
+   http://localhost:8200/v1/auth/approle/login
+{
+  "auth": {
+    "client_token": "hvs.CAESILNB2Q7s6lTpVhB_qKKAW70NSgXTiz05tpU8wlTfpcn5Gh4KHGh2cy5meEtzdnk5Mkd6bU9GVlppZExCQkxPSVk"
+  }
+}
+3. echo -n "hello vault" | base64 => aGVsbG8gdmF1bHQ=
+4. curl \
+   --header "X-Vault-Token: hvs.CAESILNB2Q7s6lTpVhB_qKKAW70NSgXTiz05tpU8wlTfpcn5Gh4KHGh2cy5meEtzdnk5Mkd6bU9GVlppZExCQkxPSVk" \
+   --request POST \
+   --data '{"plaintext":"aGVsbG8gdmF1bHQ="}' \
+   http://localhost:8200/v1/transit/encrypt/file-key
+  {
+    "data": {
+     {"ciphertext":"vault:v1:cK/lSEXSD6bew5I1CLhMG+CdyLfc73sD+F13yYsMYT/RWbQ7za+G","key_version":1} <= SAVE THIS
+    }
+  }
+5. curl \
+   --header "X-Vault-Token: hvs.CAESILNB2Q7s6lTpVhB_qKKAW70NSgXTiz05tpU8wlTfpcn5Gh4KHGh2cy5meEtzdnk5Mkd6bU9GVlppZExCQkxPSVk" \
+   --request POST \
+   --data '{"ciphertext":"vault:v1:cK/lSEXSD6bew5I1CLhMG+CdyLfc73sD+F13yYsMYT/RWbQ7za+G"}' \
+   http://localhost:8200/v1/transit/decrypt/file-key
+
+{
+  "data": {
+    "plaintext": "aGVsbG8gdmF1bHQ="
+  }
+}
+
+echo aGVsbG8gdmF1bHQ= | base64 --decode
+
+6. Key Rotation
+
+curl \
+--header "X-Vault-Token: hvs.lD0zXKwZ7XJq7hCjMGPAPOcO" \
+--request POST \
+http://localhost:8200/v1/transit/keys/file-key/rotate
+
+{"request_id":"51ece9cd-8d0b-e47b-d772-acbfad162063","lease_id":"","renewable":false,"lease_duration":0,"data":{"allow_plaintext_backup":false,"auto_rotate_period":0,"deletion_allo
+wed":false,"derived":false,"exportable":false,"imported_key":false,"keys":{"1":1773283555,"2":1773284589},"latest_version":2,"min_available_version":0,"min_decryption_version":1,"m
+in_encryption_version":0,"name":"file-key","supports_decryption":true,"supports_derivation":true,"supports_encryption":true,"supports_signing":false,"type":"aes256-gcm96"},"wrap_info":null,"warnings":null,"auth":null,"mount_type":"transit"}
+---
+$  curl \
+   --header "X-Vault-Token: hvs.CAESILNB2Q7s6lTpVhB_qKKAW70NSgXTiz05tpU8wlTfpcn5Gh4KHGh2cy5meEtzdnk5Mkd6bU9GVlppZExCQkxPSVk" \
+   --request POST \
+   --data '{"plaintext":"aGVsbG8gdmF1bHQ="}' \
+   http://localhost:8200/v1/transit/encrypt/file-key
+{"request_id":"84d96181-b8d3-d33b-6034-1769cc458053","lease_id":"","renewable":false,"lease_duration":0,"data":{"ciphertext":"vault:v2:SbYA9q8mvW1fpVUg8tvcLiA8vyruWbrZqG8/xa/Fjj4Jcaaom6p6","key_version":2},"wrap_info":null,"warnings":null,"auth":null,"mount_type":"transit"}
+--
+
+docker exec -it vault vault read transit/keys/file-key

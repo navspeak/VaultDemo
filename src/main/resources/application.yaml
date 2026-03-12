@@ -1,3 +1,13 @@
 spring:
   application:
     name: vaultdemo
+
+app:
+  vault:
+    uri: http://localhost:8200
+    role-id: ${VAULT_ROLE_ID}
+    secret-id: ${VAULT_SECRET_ID}
+    root-token: ${VAULT_ROOT_TOKEN:}
+    transit:
+      mount-path: transit
+      key-name: file-key

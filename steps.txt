@@ -1,0 +1,94 @@
+1. docker compose up -d
+2. docker exec -it vault vault operator init
+Unseal Key 1: nmUYZUvG6a/fG8OINfrnt6uBaj86mriVq9ROm+4bgzbO
+Unseal Key 2: MZlLkzfvfj7SANmKMjH5FUZbW/9Bkb2CWdju3Yu04P2s
+Unseal Key 3: J0UaEGtyjh9ect2wKthLOsXA+jymsNTMz1AYt45nV9hC
+Unseal Key 4: y/pGCutpsNApTzFdHQGFYKvWiUEOe+5m6L8/ngJqv+YM
+Unseal Key 5: fYq/2myiIyASHOtcWSltX6T/O7Pl7GHoIoGufeFAhb1j
+
+Initial Root Token: hvs.rE3EwhB892IPTxHGIqsxm0eL
+
+3. docker exec -it vault vault operator unseal
+4. docker exec -it vault vault login
+--
+Token (will be hidden):
+Success! You are now authenticated. The token information displayed below
+is already stored in the token helper. You do NOT need to run "vault login"
+again. Future Vault requests will automatically use this token.
+
+Key                  Value
+---                  -----
+token                hvs.o6HpUCgTcK8zrZdFCyLCghON
+token_accessor       6GhCXUxHsWteoaK96Nb0xMbj
+token_duration       ∞
+token_renewable      false
+token_policies       ["root"]
+identity_policies    []
+policies             ["root"]
+--
+5. docker exec -it vault sh ./vault/scripts/init.sh
+-----------------------------
+Token (will be hidden):
+Success! You are now authenticated. The token information displayed below
+is already stored in the token helper. You do NOT need to run "vault login"
+again. Future Vault requests will automatically use this token.
+
+Key                  Value
+---                  -----
+token                hvs.rE3EwhB892IPTxHGIqsxm0eL
+token_accessor       dke3elWRMg6pdZyQjn2SWmmp
+token_duration       ∞
+token_renewable      false
+token_policies       ["root"]
+identity_policies    []
+policies             ["root"]
+
+navne@Navspeak MINGW64 ~/IdeaProjects/VaultDemo (main)
+$ docker exec -it vault sh ./vault/scripts/init.sh
+Enabling transit secrets engine...
+Success! Enabled the transit secrets engine at: transit/
+Creating transit key...
+Key                       Value
+---                       -----
+allow_plaintext_backup    false
+auto_rotate_period        0s
+deletion_allowed          false
+derived                   false
+exportable                false
+imported_key              false
+keys                      map[1:1773291050]
+latest_version            1
+min_available_version     0
+min_decryption_version    1
+min_encryption_version    0
+name                      file-key
+supports_decryption       true
+supports_derivation       true
+supports_encryption       true
+supports_signing          false
+type                      aes256-gcm96
+Enabling AppRole auth...
+Success! Enabled approle auth method at: approle/
+Loading policy...
+Success! Uploaded policy: app-policy
+Creating AppRole...
+Success! Data written to: auth/approle/role/vault-demo
+
+Fetching role_id...
+Generating secret_id...
+
+========================================
+Use the following environment variables:
+
+Linux / Mac:
+export VAULT_ROLE_ID=18fb2599-ee9d-e4fa-4e00-55410667cda7
+export VAULT_SECRET_ID=ad2fa0e7-41d3-c9f1-f669-44e6d1e29a7c
+
+Windows CMD:
+set VAULT_ROLE_ID=18fb2599-ee9d-e4fa-4e00-55410667cda7
+set VAULT_SECRET_ID=ad2fa0e7-41d3-c9f1-f669-44e6d1e29a7c
+
+PowerShell:
+$env:VAULT_ROLE_ID="18fb2599-ee9d-e4fa-4e00-55410667cda7"
+$env:VAULT_SECRET_ID="ad2fa0e7-41d3-c9f1-f669-44e6d1e29a7c"
+========================================
