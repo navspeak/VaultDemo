@@ -46,7 +46,7 @@ app:
 |                                            |
 |-- 5. Store File + Wrapped DEK -------------|
 |                                            |
-|======= ENCRYPTION FLOW =======|            |
+|======= DECRYPTION FLOW =======|            |
 |------- 6. Send Wrapped DEK to /unwrap ---->|
 |                                            |--- [ KEK (Master Key) ]
 |                                            |          |
