@@ -3,11 +3,13 @@ package com.example.vaultdemo.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
+import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -85,6 +87,74 @@ public class EnvelopeCryptoService {
             return outputEnvelopeJson;
         } catch (Exception e) {
             throw new IllegalStateException("Failed to encrypt file", e);
+        }
+    }
+
+    public void encryptHugeFile(Path inputFile, Path outputDir) throws Exception {
+        String fileName = inputFile.getFileName().toString();
+
+        // 1. Setup Keys & Cipher (Same as your logic)
+        String dekBase64 = generateDekBase64();
+        byte[] iv = new byte[GCM_IV_BYTES];
+        new SecureRandom().nextBytes(iv);
+
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        SecretKeySpec keySpec = new SecretKeySpec(Base64.getDecoder().decode(dekBase64), "AES");
+        cipher.init(Cipher.ENCRYPT_MODE, keySpec, new GCMParameterSpec(GCM_TAG_BITS, iv));
+
+        // 3. STREAM with High-Performance Buffering
+        Path binaryOutput = outputDir.resolve(fileName + ".bin");
+
+        try (InputStream is = new BufferedInputStream(Files.newInputStream(inputFile));
+             OutputStream os = new BufferedOutputStream(Files.newOutputStream(binaryOutput), 1024 * 1024); // 1MB Buffer
+             CipherOutputStream cos = new CipherOutputStream(os, cipher)) {
+
+            System.out.println("Encryption started...");
+            is.transferTo(cos);
+            cos.flush();
+        }
+
+        // 3. Save only the small metadata to a .json file
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("originalFileName", fileName);
+        metadata.put("ivBase64", Base64.getEncoder().encodeToString(iv));
+        metadata.put("wrappedDek", vaultTransitService.wrapDek(dekBase64));
+        metadata.put("dek (will not store - just for demo)", dekBase64);
+
+        Path jsonOutput = outputDir.resolve(fileName + ".json");
+        objectMapper.writeValue(jsonOutput.toFile(), metadata);
+    }
+
+    public Path decryptHugeFile(Path inputEnvelopeJson, Path inputBinFile, Path outputFile) {
+        try {
+            // 1. Read Metadata (Small JSON)
+            Map<String, Object> metadata = objectMapper.readValue(inputEnvelopeJson.toFile(), Map.class);
+
+            String wrappedDek = requiredString(metadata, "wrappedDek");
+            String ivBase64 = requiredString(metadata, "ivBase64");
+
+            // 2. Unwrap DEK via Vault
+            String dekBase64 = vaultTransitService.unwrapDek(wrappedDek);
+            byte[] dekBytes = Base64.getDecoder().decode(dekBase64);
+            byte[] iv = Base64.getDecoder().decode(ivBase64);
+
+            // 3. Initialize Decrypt Cipher
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            SecretKeySpec keySpec = new SecretKeySpec(dekBytes, "AES");
+            cipher.init(Cipher.DECRYPT_MODE, keySpec, new GCMParameterSpec(GCM_TAG_BITS, iv));
+
+            // 4. Stream Decryption (Constant memory usage)
+            try (InputStream fis = Files.newInputStream(inputBinFile);
+                 CipherInputStream cis = new CipherInputStream(fis, cipher);
+                 OutputStream fos = Files.newOutputStream(outputFile)) {
+
+                // Efficiently transfers decrypted bytes to the output file
+                cis.transferTo(fos);
+            }
+
+            return outputFile;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to decrypt huge file", e);
         }
     }
 

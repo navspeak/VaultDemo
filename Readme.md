@@ -21,6 +21,7 @@ File -> Base64 encode -> Vault encrypt(file-key)
 ``` 
 ciphertext -> Vault decrypt(file-key) -> plaintext
  ```
+### Where do
 ### When you rotate the key
 
 - Operator runs: `vault write -f transit/keys/file-key/rotate`

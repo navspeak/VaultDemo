@@ -1,12 +1,13 @@
 1. docker compose up -d
 2. docker exec -it vault vault operator init
-Unseal Key 1: nmUYZUvG6a/fG8OINfrnt6uBaj86mriVq9ROm+4bgzbO
-Unseal Key 2: MZlLkzfvfj7SANmKMjH5FUZbW/9Bkb2CWdju3Yu04P2s
-Unseal Key 3: J0UaEGtyjh9ect2wKthLOsXA+jymsNTMz1AYt45nV9hC
-Unseal Key 4: y/pGCutpsNApTzFdHQGFYKvWiUEOe+5m6L8/ngJqv+YM
-Unseal Key 5: fYq/2myiIyASHOtcWSltX6T/O7Pl7GHoIoGufeFAhb1j
+Unseal Key 1: ywKRRPdWuy1uRuorxicEdHxJm+Y/bXJq/3IIauAYWMna
+Unseal Key 2: 1ZNYPJu7saSlfSbEcZgpyGFSaPWNUtYWeruz4Kxh1Bac
+Unseal Key 3: Pgru5I1vFM7XSauyIhTHOSVrl35dDbqVn9i1EygLW9iE
+Unseal Key 4: Ig2l3GKtYCdiTjsv3cU9YZuLJM3HgXz231AZkh+Ydkc0
+Unseal Key 5: mmMSprVfRN1dh0vq7dubdThAyhtfuTRUX7s1ty/smzLe
 
-Initial Root Token: hvs.rE3EwhB892IPTxHGIqsxm0eL
+Initial Root Token: hvs.SEjZULOAbAQN8rWFGGRwQANi
+
 
 3. docker exec -it vault vault operator unseal
 4. docker exec -it vault vault login
@@ -18,13 +19,14 @@ again. Future Vault requests will automatically use this token.
 
 Key                  Value
 ---                  -----
-token                hvs.o6HpUCgTcK8zrZdFCyLCghON
-token_accessor       6GhCXUxHsWteoaK96Nb0xMbj
+token                hvs.SEjZULOAbAQN8rWFGGRwQANi
+token_accessor       U72FCauQYQqGLlsNkU0dgFon
 token_duration       ∞
 token_renewable      false
 token_policies       ["root"]
 identity_policies    []
 policies             ["root"]
+
 --
 5. docker exec -it vault sh ./vault/scripts/init.sh
 -----------------------------

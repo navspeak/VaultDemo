@@ -1,0 +1,7 @@
+{
+  "originalFileName" : "input.txt",
+  "algorithm" : "AES/GCM/NoPadding",
+  "ivBase64" : "KWyyoljcZc6gobdE",
+  "wrappedDek" : "vault:v1:fGeIoTjmo4Sr2lrEVlYs8a9/NeE7DAQl/3Y+grlgLDWQk+t+oorhr0c4qA2FFJOuR95GJ4RUHMnzm/Pv",
+  "ciphertextBase64" : "bCgJqEF/cxwyucyCFVfpz18URGZRR9svJSaYZFnmUJw7IKQXSqoNHC6GkiXsNs/cl0CfsYzYekqVdGIQCPwYDyUjNkQtceGryzyi9esUD3onMtx4WpYa9CSPUKFF7yz7nA8a/lrXkr8qE0WemewvTE9eifdzdooTLroJRDwlmAUz9dbQq0ZfIcqYH6wMI212l+A8UpVG4Ix7BP1BMKbKxx62qzHEtLGvTTaS3Xjbl3iKrsDBI9xNSgACHWhsgpjgOaBtWMOZu+WRumC7JE+uTZgo1a5pC77S2jcaoXmK+/hWvJ01kqlwa4mmWFuTm5FhuxnQ4+p6eTDbH9yLCTBM/FAF0ptpFAX3Kwc/xZ3I/DFhgfDlVfzCqvKUrZei6fU2oAvzSRuKnuMoLQzj8pxpYUyhXYpS32eul4ChFAY3sUor3OTd64Gotw4IFitDmtiS2EMo39XXn+qRrjJ4d5FDkrrQeAoPWubvHWk68h5DfXiPh4W6OCSoMUJrx48pNqLreX5lCc3WonoMhb0="
+}
